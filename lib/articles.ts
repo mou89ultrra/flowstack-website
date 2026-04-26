@@ -9,7 +9,7 @@ export interface Article {
   published_at: string
   description: string
   excerpt: string
-  content: string
+  content?: string
   youtube_url?: string
 }
 
