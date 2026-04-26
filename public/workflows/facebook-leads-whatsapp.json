@@ -1,0 +1,128 @@
+{
+  "name": "FlowStack — Facebook Leads to WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📋 Facebook Leads → WhatsApp\n\n**الإعداد:**\n1. انسخ Webhook URL وضعه في Meta Webhooks → leadgen\n2. في **Set Config**: غيّر EVOLUTION_URL و INSTANCE_NAME و EVOLUTION_API_KEY\n3. في **Save to Sheets**: اربط Google Sheets\n4. غيّر YOUR_TELEGRAM_CHAT_ID\n5. فعّل الـ Workflow",
+        "height": 220,
+        "width": 320,
+        "color": 6
+      },
+      "id": "sticky-001",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-380, -80]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "facebook-leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-001",
+      "name": "Receive Facebook Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "facebook-leads"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "lead_name", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.field_data?.find(f => f.name === 'full_name')?.values?.[0] || 'عميل جديد' }}", "type": "string" },
+            { "id": "a2", "name": "lead_phone", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.field_data?.find(f => f.name === 'phone_number')?.values?.[0] || '' }}", "type": "string" },
+            { "id": "a3", "name": "lead_email", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.field_data?.find(f => f.name === 'email')?.values?.[0] || '' }}", "type": "string" },
+            { "id": "a4", "name": "EVOLUTION_URL", "value": "http://YOUR_SERVER_IP:8080", "type": "string" },
+            { "id": "a5", "name": "INSTANCE_NAME", "value": "YOUR_INSTANCE_NAME", "type": "string" },
+            { "id": "a6", "name": "EVOLUTION_API_KEY", "value": "YOUR_EVOLUTION_API_KEY", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-001",
+      "name": "Set Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.EVOLUTION_URL }}/message/sendText/{{ $json.INSTANCE_NAME }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $json.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.lead_phone }}\",\n  \"text\": \"مرحباً {{ $json.lead_name }} 👋\\n\\nشكراً لاهتمامك! تلقينا طلبك وسيتواصل معك أحد فريقنا قريباً.\\n\\nللاستفسار السريع راسلنا هنا 💬\"\n}",
+        "options": {}
+      },
+      "id": "http-001",
+      "name": "Send Welcome WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, -120]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Leads", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ new Date().toLocaleString('ar-EG') }}",
+            "name": "={{ $('Set Config').item.json.lead_name }}",
+            "phone": "={{ $('Set Config').item.json.lead_phone }}",
+            "email": "={{ $('Set Config').item.json.lead_email }}",
+            "status": "جديد"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-001",
+      "name": "Save to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [440, 60],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=📋 Lead جديد!\n\nالاسم: {{ $('Set Config').item.json.lead_name }}\nالهاتف: {{ $('Set Config').item.json.lead_phone }}\nالإيميل: {{ $('Set Config').item.json.lead_email }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-001",
+      "name": "Notify Team",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, -40],
+      "credentials": { "telegramApi": { "id": "", "name": "Telegram account" } }
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={\"status\":\"ok\"}" },
+      "id": "respond-001",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, -40]
+    }
+  ],
+  "connections": {
+    "Receive Facebook Lead": { "main": [[{"node": "Set Config", "type": "main", "index": 0}]] },
+    "Set Config": { "main": [[{"node": "Send Welcome WhatsApp", "type": "main", "index": 0}, {"node": "Save to Sheets", "type": "main", "index": 0}]] },
+    "Send Welcome WhatsApp": { "main": [[{"node": "Notify Team", "type": "main", "index": 0}]] },
+    "Save to Sheets": { "main": [[{"node": "Notify Team", "type": "main", "index": 0}]] },
+    "Notify Team": { "main": [[{"node": "Respond OK", "type": "main", "index": 0}]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

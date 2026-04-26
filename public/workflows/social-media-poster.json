@@ -1,0 +1,129 @@
+{
+  "name": "FlowStack — Auto Social Media Poster",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📱 Auto Social Media Poster\n\n**إعداد Google Sheet:**\nأنشئ Sheet بهذه الأعمدة:\n`post_text | image_url | telegram_channel | status | scheduled_date`\n\n**الإعداد:**\n1. في **Set Config**: غيّر SHEET_ID و TELEGRAM_CHANNEL_ID\n2. في **Read Posts**: اربط Google Sheets\n3. في **Post to Telegram**: اربط Telegram Bot\n4. في **Post to Facebook**: أضف Page Access Token\n5. غيّر وقت التشغيل في Schedule Trigger",
+        "height": 280,
+        "width": 360,
+        "color": 5
+      },
+      "id": "sticky-001",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-400, -100]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 1 }]
+        }
+      },
+      "id": "schedule-001",
+      "name": "Check Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Posts", "mode": "name" },
+        "filters": {
+          "conditions": [
+            { "keyName": "status", "condition": "eq", "keyValue": "pending" }
+          ]
+        },
+        "options": { "returnAllMatches": true }
+      },
+      "id": "sheets-001",
+      "name": "Read Pending Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [220, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.scheduled_date }}", "rightValue": "={{ new Date().toISOString().split('T')[0] }}", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-001",
+      "name": "Post Today?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.telegram_channel || 'YOUR_TELEGRAM_CHANNEL_ID' }}",
+        "text": "={{ $json.post_text }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-001",
+      "name": "Post to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, -120],
+      "credentials": { "telegramApi": { "id": "", "name": "Telegram account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/YOUR_PAGE_ID/feed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"message\": \"{{ $json.post_text }}\",\n  \"access_token\": \"YOUR_PAGE_ACCESS_TOKEN\"\n}",
+        "options": {}
+      },
+      "id": "http-001",
+      "name": "Post to Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Posts", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "posted",
+            "posted_at": "={{ new Date().toLocaleString('ar-EG') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-002",
+      "name": "Mark as Posted",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [880, -60],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    }
+  ],
+  "connections": {
+    "Check Every Hour": { "main": [[{"node": "Read Pending Posts", "type": "main", "index": 0}]] },
+    "Read Pending Posts": { "main": [[{"node": "Post Today?", "type": "main", "index": 0}]] },
+    "Post Today?": {
+      "main": [
+        [{"node": "Post to Telegram", "type": "main", "index": 0}, {"node": "Post to Facebook", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Post to Telegram": { "main": [[{"node": "Mark as Posted", "type": "main", "index": 0}]] },
+    "Post to Facebook": { "main": [[{"node": "Mark as Posted", "type": "main", "index": 0}]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

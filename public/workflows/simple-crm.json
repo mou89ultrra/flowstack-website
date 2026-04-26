@@ -1,0 +1,112 @@
+{
+  "name": "FlowStack — Simple CRM on Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📊 Simple CRM on Google Sheets\n\n**إعداد Google Sheet:**\nأنشئ Sheet بهذه الأعمدة:\n`name | phone | email | status | next_followup | notes | last_contact`\n\n**القيم المقبولة لـ status:** جديد | متابعة | عميل | مغلق\n\n**الإعداد:**\n1. في **Read Contacts**: اربط Google Sheets وضع SHEET_ID\n2. غيّر YOUR_TELEGRAM_CHAT_ID\n3. غيّر وقت التشغيل في Schedule Trigger (افتراضي 9 صباحاً)\n4. فعّل الـ Workflow",
+        "height": 280,
+        "width": 360,
+        "color": 4
+      },
+      "id": "sticky-001",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-400, -100]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }]
+        }
+      },
+      "id": "schedule-001",
+      "name": "Daily at 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Contacts", "mode": "name" },
+        "filters": {
+          "conditions": [
+            { "keyName": "status", "condition": "notEq", "keyValue": "مغلق" }
+          ]
+        },
+        "options": { "returnAllMatches": true }
+      },
+      "id": "sheets-001",
+      "name": "Read Contacts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [220, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.next_followup }}", "rightValue": "={{ new Date().toISOString().split('T')[0] }}", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-001",
+      "name": "Follow Up Today?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=📞 تذكير متابعة اليوم!\n\nالاسم: {{ $json.name }}\nالهاتف: {{ $json.phone }}\nالحالة: {{ $json.status }}\nملاحظات: {{ $json.notes || 'لا يوجد' }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-001",
+      "name": "Send Reminder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, -80],
+      "credentials": { "telegramApi": { "id": "", "name": "Telegram account" } }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Contacts", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_contact": "={{ new Date().toISOString().split('T')[0] }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-002",
+      "name": "Update Last Contact",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [880, -80],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    }
+  ],
+  "connections": {
+    "Daily at 9am": { "main": [[{"node": "Read Contacts", "type": "main", "index": 0}]] },
+    "Read Contacts": { "main": [[{"node": "Follow Up Today?", "type": "main", "index": 0}]] },
+    "Follow Up Today?": {
+      "main": [
+        [{"node": "Send Reminder", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Send Reminder": { "main": [[{"node": "Update Last Contact", "type": "main", "index": 0}]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

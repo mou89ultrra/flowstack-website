@@ -1,0 +1,161 @@
+{
+  "name": "FlowStack — WhatsApp AI Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🤖 WhatsApp AI Customer Support Bot\n\n**الإعداد:**\n1. انسخ Webhook URL وضعه في Evolution API → Webhooks\n2. في **Set Config**: غيّر EVOLUTION_URL و INSTANCE_NAME و EVOLUTION_API_KEY و DEEPSEEK_API_KEY\n3. في **System Prompt**: خصّص شخصية البوت لعملك\n4. في **Log to Sheets**: اربط Google Sheets واختر الـ Spreadsheet\n5. فعّل الـ Workflow",
+        "height": 260,
+        "width": 360,
+        "color": 7
+      },
+      "id": "sticky-001",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-400, -80]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-bot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-001",
+      "name": "Receive WhatsApp Message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "whatsapp-bot"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "phone", "value": "={{ $json.body.data.key.remoteJid.replace('@s.whatsapp.net','') }}", "type": "string" },
+            { "id": "a2", "name": "message", "value": "={{ $json.body.data.message.conversation || $json.body.data.message.extendedTextMessage?.text || '' }}", "type": "string" },
+            { "id": "a3", "name": "messageType", "value": "={{ $json.body.data.messageType }}", "type": "string" },
+            { "id": "a4", "name": "EVOLUTION_URL", "value": "http://YOUR_SERVER_IP:8080", "type": "string" },
+            { "id": "a5", "name": "INSTANCE_NAME", "value": "YOUR_INSTANCE_NAME", "type": "string" },
+            { "id": "a6", "name": "EVOLUTION_API_KEY", "value": "YOUR_EVOLUTION_API_KEY", "type": "string" },
+            { "id": "a7", "name": "DEEPSEEK_API_KEY", "value": "YOUR_DEEPSEEK_API_KEY", "type": "string" },
+            { "id": "a8", "name": "SYSTEM_PROMPT", "value": "أنت مساعد خدمة عملاء احترافي. أجب باللغة العربية. كن مختصراً ومفيداً. إذا لم تعرف الإجابة قل سأحيلك لفريقنا.", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-001",
+      "name": "Set Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.messageType }}", "rightValue": "conversation", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "if-001",
+      "name": "Is Text Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepseek.com/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Set Config').item.json.DEEPSEEK_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-chat\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"{{ $('Set Config').item.json.SYSTEM_PROMPT }}\"},\n    {\"role\": \"user\", \"content\": \"{{ $('Set Config').item.json.message }}\"}\n  ],\n  \"max_tokens\": 300\n}",
+        "options": {}
+      },
+      "id": "http-001",
+      "name": "Ask DeepSeek AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, -120]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set Config').item.json.EVOLUTION_URL }}/message/sendText/{{ $('Set Config').item.json.INSTANCE_NAME }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $('Set Config').item.json.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('Set Config').item.json.phone }}\",\n  \"text\": \"{{ $json.choices[0].message.content }}\"\n}",
+        "options": {}
+      },
+      "id": "http-002",
+      "name": "Send WhatsApp Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, -200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ new Date().toLocaleString('ar-EG') }}",
+            "phone": "={{ $('Set Config').item.json.phone }}",
+            "message": "={{ $('Set Config').item.json.message }}",
+            "reply": "={{ $('Ask DeepSeek AI').item.json.choices[0].message.content }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-001",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [880, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={\"status\":\"ok\"}" },
+      "id": "respond-001",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1100, -100]
+    }
+  ],
+  "connections": {
+    "Receive WhatsApp Message": { "main": [[{"node": "Set Config", "type": "main", "index": 0}]] },
+    "Set Config": { "main": [[{"node": "Is Text Message?", "type": "main", "index": 0}]] },
+    "Is Text Message?": {
+      "main": [
+        [{"node": "Ask DeepSeek AI", "type": "main", "index": 0}],
+        [{"node": "Respond OK", "type": "main", "index": 0}]
+      ]
+    },
+    "Ask DeepSeek AI": { "main": [[{"node": "Send WhatsApp Reply", "type": "main", "index": 0}, {"node": "Log to Sheets", "type": "main", "index": 0}]] },
+    "Send WhatsApp Reply": { "main": [[{"node": "Respond OK", "type": "main", "index": 0}]] },
+    "Log to Sheets": { "main": [[{"node": "Respond OK", "type": "main", "index": 0}]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
