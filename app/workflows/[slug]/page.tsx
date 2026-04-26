@@ -4,12 +4,7 @@ import { getWorkflows, getWorkflowBySlug } from '@/lib/workflows'
 import Footer from '@/components/Footer'
 import WorkflowDetailClient from './WorkflowDetailClient'
 
-export const revalidate = 60
-
-export async function generateStaticParams() {
-  const workflows = await getWorkflows()
-  return workflows.map((w) => ({ slug: w.slug }))
-}
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

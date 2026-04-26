@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'تحميل workflows جاهزة لـ n8n مجاناً — واتساب بوت، جمع Leads، نشر سوشيال ميديا، وأكثر.',
 }
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function WorkflowsPage() {
   const workflows = await getWorkflows()

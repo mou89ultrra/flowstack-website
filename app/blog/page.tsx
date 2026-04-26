@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'مقالات وشروحات n8n وأتمتة الأعمال بالعربي. حلول عملية لمشاكل واتساب بوت والـ workflows.',
 }
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function BlogPage() {
   const articles = await getArticles()

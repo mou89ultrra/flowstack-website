@@ -1,15 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getArticles, getArticleBySlug } from '@/lib/articles'
+
 import Footer from '@/components/Footer'
 import { Clock } from 'lucide-react'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
-export async function generateStaticParams() {
-  const articles = await getArticles()
-  return articles.map((a) => ({ slug: a.slug }))
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
