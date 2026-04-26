@@ -145,7 +145,7 @@ export default function WorkflowDetailClient({ workflow, related = [] }: { workf
       <EmailModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        workflow={{ title: workflow.title, file: workflow.file_url }}
+        workflow={{ title: workflow.title, file: workflow.file_url || '' }}
       />
     </>
   )
