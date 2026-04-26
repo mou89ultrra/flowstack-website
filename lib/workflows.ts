@@ -7,12 +7,12 @@ export interface Workflow {
   category: string
   color: string
   description: string
-  long_description: string
-  tools: string[]
-  downloads_count: number
-  file_url: string
-  use_cases: string[]
-  steps: string[]
+  long_description?: string
+  tools?: string[]
+  downloads_count?: number
+  file_url?: string
+  use_cases?: string[]
+  steps?: string[]
 }
 
 export async function getWorkflows(): Promise<Workflow[]> {
