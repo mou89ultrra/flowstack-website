@@ -50,7 +50,7 @@ export default function WorkflowDetailClient({ workflow, related = [] }: { workf
           <div>
             <h2 className="text-lg font-bold text-white mb-4">كيفية الإعداد</h2>
             <div className="space-y-3">
-              {workflow.steps.map((step, i) => (
+              {(workflow.steps || []).map((step, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 text-white"
@@ -90,7 +90,7 @@ export default function WorkflowDetailClient({ workflow, related = [] }: { workf
 
             <div className="space-y-2">
               <p className="text-xs text-gray-500 font-semibold">الأدوات المطلوبة:</p>
-              {workflow.tools.map((tool) => (
+              {(workflow.tools || []).map((tool) => (
                 <div
                   key={tool}
                   className="flex items-center gap-2 text-xs text-gray-300 px-3 py-1.5 rounded-lg"
