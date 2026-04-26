@@ -1,15 +1,10 @@
 import { MetadataRoute } from 'next'
-import { getArticleSlugs } from '@/lib/articles'
-import { getWorkflowSlugs } from '@/lib/workflows'
+import { articles } from '@/lib/articles'
+import { workflows } from '@/lib/workflows'
 
 const BASE = 'https://n8n-automation.io'
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [articleSlugs, workflowSlugs] = await Promise.all([
-    getArticleSlugs(),
-    getWorkflowSlugs(),
-  ])
-
+export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
     { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
@@ -20,15 +15,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
   ]
 
-  const articlePages: MetadataRoute.Sitemap = articleSlugs.map((slug) => ({
-    url: `${BASE}/blog/${slug}`,
-    lastModified: new Date(),
+  const articlePages: MetadataRoute.Sitemap = articles.map((a) => ({
+    url: `${BASE}/blog/${a.slug}`,
+    lastModified: new Date(a.dateISO),
     changeFrequency: 'monthly',
     priority: 0.85,
   }))
 
-  const workflowPages: MetadataRoute.Sitemap = workflowSlugs.map((slug) => ({
-    url: `${BASE}/workflows/${slug}`,
+  const workflowPages: MetadataRoute.Sitemap = workflows.map((w) => ({
+    url: `${BASE}/workflows/${w.slug}`,
     lastModified: new Date(),
     changeFrequency: 'monthly',
     priority: 0.8,

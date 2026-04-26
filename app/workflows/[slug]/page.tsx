@@ -1,14 +1,15 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getWorkflows, getWorkflowBySlug } from '@/lib/workflows'
+import { workflows, getWorkflowBySlug } from '@/lib/workflows'
 import Footer from '@/components/Footer'
 import WorkflowDetailClient from './WorkflowDetailClient'
 
-export const dynamic = 'force-dynamic'
+export function generateStaticParams() {
+  return workflows.map((w) => ({ slug: w.slug }))
+}
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  const workflow = await getWorkflowBySlug(slug)
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const workflow = getWorkflowBySlug(params.slug)
   if (!workflow) return {}
   return {
     title: `${workflow.title} — تحميل مجاناً`,
@@ -16,9 +17,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-export default async function WorkflowPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const workflow = await getWorkflowBySlug(slug)
+export default function WorkflowPage({ params }: { params: { slug: string } }) {
+  const workflow = getWorkflowBySlug(params.slug)
   if (!workflow) notFound()
 
   return (
