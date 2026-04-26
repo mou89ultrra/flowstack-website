@@ -11,8 +11,9 @@ export async function generateStaticParams() {
   return workflows.map((w) => ({ slug: w.slug }))
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const workflow = await getWorkflowBySlug(params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const workflow = await getWorkflowBySlug(slug)
   if (!workflow) return {}
   return {
     title: `${workflow.title} — تحميل مجاناً`,
@@ -20,8 +21,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default async function WorkflowPage({ params }: { params: { slug: string } }) {
-  const workflow = await getWorkflowBySlug(params.slug)
+export default async function WorkflowPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const workflow = await getWorkflowBySlug(slug)
   if (!workflow) notFound()
 
   return (
