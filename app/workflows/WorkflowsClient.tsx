@@ -16,7 +16,7 @@ export default function WorkflowsClient({ workflows }: { workflows: Workflow[] }
     : workflows.filter((w) => w.category === activeCategory)
 
   const openModal = (wf: Workflow) => {
-    setSelectedWorkflow({ title: wf.title, file: wf.file_url })
+    setSelectedWorkflow({ title: wf.title, file: wf.file_url || '' })
     setModalOpen(true)
   }
 
