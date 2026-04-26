@@ -28,13 +28,13 @@ export default function WorkflowDetailClient({ workflow, related = [] }: { workf
             style={{ background: 'linear-gradient(135deg, #111118, #1a1a2e)', border: `1px solid ${workflow.color}25` }}
           >
             <h2 className="font-bold text-white mb-3">عن هذا الـ Workflow</h2>
-            <p className="text-gray-300 leading-relaxed">{workflow.longDescription}</p>
+            <p className="text-gray-300 leading-relaxed">{workflow.long_description}</p>
           </div>
 
           <div>
             <h2 className="text-lg font-bold text-white mb-4">حالات الاستخدام</h2>
             <div className="grid sm:grid-cols-2 gap-3">
-              {workflow.useCases.map((uc) => (
+              {(workflow.use_cases || []).map((uc) => (
                 <div
                   key={uc}
                   className="flex items-start gap-2.5 p-3 rounded-xl text-sm text-gray-300"
@@ -73,7 +73,7 @@ export default function WorkflowDetailClient({ workflow, related = [] }: { workf
           >
             <div className="text-center mb-5">
               <div className="text-4xl font-black mb-1" style={{ color: workflow.color }}>مجاناً</div>
-              <div className="text-gray-400 text-sm">{workflow.downloads} تحميل</div>
+              <div className="text-gray-400 text-sm">{workflow.downloads_count?.toLocaleString()} تحميل</div>
             </div>
 
             <button
