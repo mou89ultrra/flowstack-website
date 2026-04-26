@@ -135,7 +135,7 @@ export default function WorkflowDetailClient({ workflow, related = [] }: { workf
                   {w.category}
                 </span>
                 <h3 className="text-sm font-bold text-white mb-1">{w.title}</h3>
-                <p className="text-gray-500 text-xs">{w.downloads} تحميل</p>
+                <p className="text-gray-500 text-xs">{w.downloads_count?.toLocaleString()} تحميل</p>
               </a>
             ))}
           </div>
